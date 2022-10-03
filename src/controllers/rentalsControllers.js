@@ -42,6 +42,57 @@ export async function postRentals(req, res){
     }catch(err){
         return res.status(400).send(err.message);
     }
-
-
 }
+
+export async function getRentals(req, res){
+    const rentals = res.locals.rentals;
+     try{
+        return res.status(200).send(rentals.rows)
+     }catch(err){
+        return res.status(400).send(err.message)
+     }
+}
+
+export async function returnRentals (req, res){
+    const today = dayjs(). format('YYYY-MM-DD');
+    const endingRent = res.locals.rentalending;
+    const id = endingRent.rows[0].id;
+    const daysRented = endingRent.rows[0].daysRented;
+    let returningDate = endingRent.rows[0].returnDate;
+    try{
+    if(returningDate - endingRent.rows[0].rentDate === 0){
+        returningDate = today + 1; 
+    }else{
+        returningDate = today
+    }
+    const differenceReturned = (returningDate - endingRent.rows[0].rentDate);
+    let delayFeereturn = endingRent.rows[0].delayFee
+    if(differenceReturned > daysRented ){
+      delayFeereturn  =  (differenceReturned * ((endingRent.rows[0].originalPrice)/(daysRented)));
+    }
+
+    await connection.query(`UPDATE rentals
+    SET "returnDate" = $1, "delayFee" = $2 WHERE id = $3
+    `, [today, delayFeereturn, id ]);
+
+    return res.status(200).send("Jogo devolvido com sucesso!");}
+    catch(err){
+        return res.status(400).send(err.message);
+    }
+}
+
+export async function deleteRentals (req, res){
+    const deleting = res.locals.rentaldeleting.rows[0];
+    console.log(deleting.id);
+
+    try{
+        const deleteRent = await connection.query(`DELETE 
+        FROM rentals 
+        WHERE id = $1`, [deleting.id]);
+        return res.status(200).send('Aluguel deletado com sucesso');
+    }catch(err){
+        return res.status(400).send(err.message);
+    }
+    
+}
+
